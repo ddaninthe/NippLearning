@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>NippLearning</title>
+    <meta charset="utf-8">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <style>
+        h2 {
+            padding: 10px;
+        }
+
+        body {
+            font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif
+        }
+
+        #drop {
+            width: 200px;
+            height: 150px;
+            border: 2px dashed rgba(0, 0, 0, .3);
+            border-radius: 20px;
+            line-height: 150px;
+            font-size: 20px;
+            color: rgba(0, 0, 0, .3);
+            text-align: center;
+        }
+
+        div {
+            margin: 20px;
+        }
+
+        span {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Gender Guesser</h2>
+        <div class="col-md-7 offset-md-1 offset-lg-2">
+            <h4>Déposez la photo d'une personne</h4>
+            <div class="col-6" id="drop">Drop here</div>
+            <div class="form-group col-lg-9">
+                <label for="image">Ou</label>
+                <input type="file" class="form-control-file" name="image" id="image"
+                    accept="image/png, image/jpeg,.jpg" />
+            </div>
+            <div class="offset-md-2">
+                <button type="submit" id="submit" class="btn btn-primary">Envoyer</button>
+            </div>
+        </div>
+        <div class="col-md-6 d-none" id="result">
+            Il semble que cette personne soit <span class="span-result"></span>.
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener("dragover", function (e) {
+            e = e || event;
+            if (e.target.type !== "file") {
+                e.preventDefault();
+            }
+        }, false);
+        window.addEventListener("drop", function (e) {
+            e = e || event;
+            if (e.target.type !== "file") {
+                e.preventDefault();
+            }
+        }, false);
+
+        jQuery(($) => {
+            var width = 32;
+            var height = 32;
+
+            $("#drop").on('drop', e => {
+                var item = e.originalEvent.dataTransfer.items[0];
+                if (item.kind === "file" && (item.type === "image/png" || item.type === "image/jpeg")) {
+                    $("#image").prop("files", e.originalEvent.dataTransfer.files);
+                }
+            });
+
+            $("#submit").on('click', () => {
+                var file = $("#image").prop("files")[0];
+                if (!file) return false;
+
+                var img = new Image();
+                img.onload = e => {
+                    if (img.height != height) {
+                        img.height = height;
+                    }
+                    if (img.width != width) {
+                        img.width = width;
+                    }
+
+                    var canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    var ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    $(this).prop("disabled", true);
+                    $.ajax({
+                            type: "POST",
+                            url: "/predict",
+                            data: {
+                                image: canvas.toDataURL("image/png")
+                            }
+                        })
+                        .done(data => {
+                            $("#result span").html(data);
+                            $("#result").removeClass("d-none");
+                        })
+                        .fail((jqXHR, textStatus, errorThrown) => {
+                            console.log(jqXHR);
+                            console.log(textStatus);
+                            console.log(errorThrown);
+                        })
+                        .always(() => {
+                            $(this).prop("disabled", false);
+                        });
+                }
+
+                var reader = new FileReader();
+                reader.onload = e => img.src = e.target.result;
+                reader.readAsDataURL(file);
+            });
+        });
+    </script>
+</body>
+
+</html>
