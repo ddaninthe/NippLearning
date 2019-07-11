@@ -36,5 +36,6 @@ if __name__ == "__main__":
               batch_size=64,
               validation_split=0.2,
               verbose=1,
-
               callbacks=[tensor_cb])
+
+    model.save('./models/sgd_C1_E100_B64.h5')
