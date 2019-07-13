@@ -27,7 +27,7 @@ def predict():
 
     image = np.reshape(image, (1, 3072))
 
-    model_name = "sgd_C1_E100_B64.h5"
+    model_name = "sgd_d16_lr.1_e169_acc0.86_vacc0.68.h5"
     model = models.load_model("./models/" + model_name)
 
     value = model.predict(image)
