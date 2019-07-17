@@ -6,8 +6,11 @@
     <meta charset="utf-8">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
-        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.18/css/jquery.dataTables.min.css"/>
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min.js"></script>
 
     <style>
         h2 {
@@ -33,9 +36,8 @@
             margin: 20px;
         }
 
-        span {
-            color: red;
-            font-weight: bold;
+        thead {
+            background-color: #faf1de;
         }
     </style>
 </head>
@@ -49,15 +51,14 @@
             <div class="form-group col-lg-9">
                 <label for="image">Ou</label>
                 <input type="file" class="form-control-file" name="image" id="image"
-                    accept="image/png, image/jpeg,.jpg" />
+                    accept="image/png, image/jpeg,.jpg" multiple="multiple" />
             </div>
             <div class="offset-md-2">
                 <button type="submit" id="submit" class="btn btn-primary">Envoyer</button>
             </div>
         </div>
-        <div class="col-md-6 d-none" id="result">
-            Il semble que cette personne soit <span class="span-result"></span>.
-        </div>
+
+        <table id="table"></table>
     </div>
 
     <script>
@@ -86,49 +87,68 @@
             });
 
             $("#submit").on('click', () => {
-                var file = $("#image").prop("files")[0];
-                if (!file) return false;
+                var files = $("#image").prop("files");
+                if (!files) return false;
 
-                var img = new Image();
-                img.onload = e => {
-                    if (img.height != height) {
-                        img.height = height;
-                    }
-                    if (img.width != width) {
-                        img.width = width;
-                    }
+                var images = new Array();
 
-                    var canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    var ctx = canvas.getContext("2d");
-                    ctx.drawImage(img, 0, 0, width, height);
+                var i = 0;
+                Array.from(files).forEach(file => {
+                    var img = new Image();
+                    img.onload = e => {
+                        if (img.height != height) {
+                            img.height = height;
+                        }
+                        if (img.width != width) {
+                            img.width = width;
+                        }
 
-                    $(this).prop("disabled", true);
-                    $.ajax({
-                            type: "POST",
-                            url: "/predict",
-                            data: {
-                                image: canvas.toDataURL("image/png")
-                            }
-                        })
-                        .done(data => {
-                            $("#result span").html(data);
-                            $("#result").removeClass("d-none");
-                        })
-                        .fail((jqXHR, textStatus, errorThrown) => {
-                            console.log(jqXHR);
-                            console.log(textStatus);
-                            console.log(errorThrown);
-                        })
-                        .always(() => {
-                            $(this).prop("disabled", false);
+                        var canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        var ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0, width, height);
+ 
+                        images.push({
+                            name: file.name,
+                            src: canvas.toDataURL("image/png")
                         });
-                }
 
-                var reader = new FileReader();
-                reader.onload = e => img.src = e.target.result;
-                reader.readAsDataURL(file);
+                        if (++i == files.length) {
+                            $(this).prop("disabled", true);
+                            $.ajax({
+                                    type: "POST",
+                                    url: "/predict",
+                                    data: {
+                                        images: JSON.stringify(images)
+                                    }
+                                })
+                                .done(data => {
+                                    console.log(JSON.parse(data));
+
+                                    $("#table").DataTable({
+                                        data : JSON.parse(data),
+                                        columns: [
+                                            { title: 'Filename' },
+                                            { title: 'Prediction' }
+                                        ]
+                                    });
+                                })
+                                .fail((jqXHR, textStatus, errorThrown) => {
+                                    console.log(jqXHR);
+                                    console.log(textStatus);
+                                    console.log(errorThrown);
+                                })
+                                .always(() => {
+                                    $(this).prop("disabled", false);
+                                });
+                        }
+                    }
+
+                    var reader = new FileReader();
+                    reader.onload = e => img.src = e.target.result;
+                    reader.readAsDataURL(file);
+                });
             });
         });
     </script>
