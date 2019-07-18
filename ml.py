@@ -1,6 +1,6 @@
-from tensorflow.python.keras import activations
+from tensorflow.python.keras.activations import *
 from tensorflow.python.keras import callbacks
-from tensorflow.python.keras import layers
+from tensorflow.python.keras.layers import *
 from tensorflow.python.keras import losses
 from tensorflow.python.keras import models
 from tensorflow.python.keras import optimizers
@@ -9,7 +9,7 @@ import numpy as np
 
 
 def get_tensor_dir(opt: str, epochs: int,
-                   l_inputs, lr: float = 0,
+                   l_inputs=[], lr: float = 0,
                    decay: float = 0, mom: float = 0,
                    test_mode=False):
 
@@ -34,7 +34,7 @@ def get_tensor_dir(opt: str, epochs: int,
     return dir_name
 
 
-def get_file_path(optimizer: str, l_inputs, lr: float = 0):
+def get_file_path(optimizer: str, l_inputs=[], lr: float = 0):
     file_path = "./models/" + optimizer + "_d"\
 
     for li in l_inputs:
@@ -61,40 +61,54 @@ if __name__ == "__main__":
     # Model
     model = models.Sequential()
 
+    epochs = 150
+
     # Layers
-    layer_inputs = [32]
+    layer_inputs = [64, 32]
     for i in range(len(layer_inputs)):
         if i == 0:
-            model.add(layers.Dense(layer_inputs[i],
-                                   input_shape=(3072, ),
-                                   activation=activations.relu))
+            model.add(Dense(layer_inputs[i],
+                            input_shape=(3072, ),
+                            activation=relu))
         else:
-            model.add(layers.Dense(layer_inputs[i],
-                                   activation=activations.relu))
-    model.add(layers.Dense(1,
-                           activation=activations.sigmoid))
+            model.add(Dense(layer_inputs[i],
+                            activation=relu))
+
+    '''ConvNet
+    model.add(Reshape((32, 32, 3), input_shape=(3072,)))
+    model.add(Conv2D(16, 3, padding='same', activation=relu))
+    model.add(AveragePooling2D())
+    model.add(Conv2D(32, 3, padding='same', activation=relu))
+    model.add(AveragePooling2D())
+    model.add(Conv2D(64, 3, padding='same', activation=relu))
+    model.add(AveragePooling2D())
+    model.add(Flatten())
+    '''
+
+    model.add(Dense(1, activation=sigmoid))
 
     # Compile
-    opt = "adam"
-    optimizer = optimizers.Adam()
+    opt = "sgd"
+    learning = .1
+    optimizer = optimizers.SGD()
 
     model.compile(loss=losses.binary_crossentropy,
                   optimizer=optimizer,
                   metrics=['accuracy'])
 
     # Callbacks
-    epochs = 300
     log_dir = get_tensor_dir(opt=opt,
                              epochs=epochs,
-                             test_mode=False,
-                             l_inputs=layer_inputs)
+                             lr=learning,
+                             l_inputs=layer_inputs,
+                             test_mode=False)
     tensor_cb = callbacks.TensorBoard(log_dir=log_dir)
 
     # Stops the training if no improvement
-    early_cb = callbacks.EarlyStopping(monitor='acc', patience=3, min_delta=0.05)
+    early_cb = callbacks.EarlyStopping(monitor='val_loss', patience=5, min_delta=0.01)
 
     # Saves model while training if [monitor] param is better than the [period] previous epochs
-    file_path = get_file_path(optimizer=opt, l_inputs=layer_inputs)
+    file_path = get_file_path(optimizer=opt, lr=learning, l_inputs=layer_inputs)
     checkpoint_cp = callbacks.ModelCheckpoint(filepath=file_path,
                                               monitor="acc",
                                               save_best_only=True,
@@ -104,4 +118,4 @@ if __name__ == "__main__":
               epochs=epochs,
               batch_size=64,
               validation_split=0.2,
-              callbacks=[tensor_cb])
+              callbacks=[tensor_cb, checkpoint_cp])

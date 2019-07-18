@@ -6,7 +6,6 @@
     <meta charset="utf-8">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.18/css/jquery.dataTables.min.css"/>
 
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
@@ -79,6 +78,8 @@
             var width = 32;
             var height = 32;
 
+            var table;
+
             $("#drop").on('drop', e => {
                 var item = e.originalEvent.dataTransfer.items[0];
                 if (item.kind === "file" && (item.type === "image/png" || item.type === "image/jpeg")) {
@@ -126,7 +127,8 @@
                                 .done(data => {
                                     console.log(JSON.parse(data));
 
-                                    $("#table").DataTable({
+                                    if (table) table.destroy();
+                                    table = $("#table").DataTable({
                                         data : JSON.parse(data),
                                         columns: [
                                             { title: 'Filename' },
