@@ -64,7 +64,7 @@ if __name__ == "__main__":
     epochs = 150
 
     # Layers
-    layer_inputs = [64, 32]
+    layer_inputs = [2048, 1024, 512, 256, 64]
     for i in range(len(layer_inputs)):
         if i == 0:
             model.add(Dense(layer_inputs[i],
@@ -88,9 +88,8 @@ if __name__ == "__main__":
     model.add(Dense(1, activation=sigmoid))
 
     # Compile
-    opt = "sgd"
-    learning = .1
-    optimizer = optimizers.SGD()
+    opt = "adam"
+    optimizer = optimizers.Adam()
 
     model.compile(loss=losses.binary_crossentropy,
                   optimizer=optimizer,
@@ -99,23 +98,25 @@ if __name__ == "__main__":
     # Callbacks
     log_dir = get_tensor_dir(opt=opt,
                              epochs=epochs,
-                             lr=learning,
                              l_inputs=layer_inputs,
                              test_mode=False)
     tensor_cb = callbacks.TensorBoard(log_dir=log_dir)
 
     # Stops the training if no improvement
-    early_cb = callbacks.EarlyStopping(monitor='val_loss', patience=5, min_delta=0.01)
+    early_cb = callbacks.EarlyStopping(monitor='val_loss',
+                                       patience=10,
+                                       min_delta=0.001)
 
     # Saves model while training if [monitor] param is better than the [period] previous epochs
-    file_path = get_file_path(optimizer=opt, lr=learning, l_inputs=layer_inputs)
+    file_path = get_file_path(optimizer=opt,
+                              l_inputs=layer_inputs)
     checkpoint_cp = callbacks.ModelCheckpoint(filepath=file_path,
-                                              monitor="acc",
+                                              monitor="val_acc",
                                               save_best_only=True,
-                                              period=5)
+                                              period=1)
 
     model.fit(x_data, y_data,
               epochs=epochs,
               batch_size=64,
               validation_split=0.2,
-              callbacks=[tensor_cb, checkpoint_cp])
+              callbacks=[tensor_cb, checkpoint_cp, early_cb])
