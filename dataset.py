@@ -1,6 +1,7 @@
 from PIL import Image
 import glob
 import numpy
+from sklearn.utils import shuffle
 
 
 def load_data(directory, extension_type, value):
@@ -20,9 +21,4 @@ def load_data(directory, extension_type, value):
 
 
 def randomize(x_data, y_data):
-    rng_state = numpy.random.get_state()
-    numpy.random.shuffle(x_data)
-    numpy.random.set_state(rng_state)
-    numpy.random.shuffle(y_data)
-
-    return x_data, y_data
+    return shuffle(x_data, y_data)

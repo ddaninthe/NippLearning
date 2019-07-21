@@ -20,6 +20,9 @@ def predict():
     if 'images' not in request.form:
         abort(400)
 
+    model_name = "sgd_d512.64.32_e150_m.5.h5"
+    model = models.load_model("./models/" + model_name)
+
     results = []
     request_images = json.loads(request.form['images'])
     for form_image in request_images:
@@ -32,9 +35,6 @@ def predict():
         image = image.convert('RGB')
 
         image = np.reshape(image, (1, 3072))
-
-        model_name = "adam_d512.128.32.1_e009_acc0.67_vacc0.68.h5"
-        model = models.load_model("./models/" + model_name)
 
         value = model.predict(image)
 

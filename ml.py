@@ -34,7 +34,7 @@ def get_tensor_dir(opt: str, epochs: int,
     return dir_name
 
 
-def get_file_path(optimizer: str, l_inputs=[], lr: float = 0):
+def get_file_path(optimizer: str, l_inputs=[], lr: float = 0, mom: float = 0):
     file_path = "./models/" + optimizer + "_d"\
 
     for li in l_inputs:
@@ -43,6 +43,9 @@ def get_file_path(optimizer: str, l_inputs=[], lr: float = 0):
     file_path += "1"
     if lr != 0:
         file_path += "_lr" + str(lr)
+
+    if mom != 0:
+        file_path += "_m" + str(mom)
 
     file_path += "_e{epoch:03d}_acc{acc:.2f}_vacc{val_acc:.2f}.h5"
     return file_path
@@ -64,10 +67,10 @@ if __name__ == "__main__":
     epochs = 150
 
     # Layers
-    layer_inputs = [2048, 1024, 512, 256, 64]
+    layer_inputs = [512, 64, 32]
     for i in range(len(layer_inputs)):
         if i == 0:
-            model.add(Dense(layer_inputs[i],
+            model.add(Dense(layer_inputs[0],
                             input_shape=(3072, ),
                             activation=relu))
         else:
@@ -88,8 +91,9 @@ if __name__ == "__main__":
     model.add(Dense(1, activation=sigmoid))
 
     # Compile
-    opt = "adam"
-    optimizer = optimizers.Adam()
+    opt = "sgd"
+    momentum = 0.5
+    optimizer = optimizers.SGD(momentum=momentum)
 
     model.compile(loss=losses.binary_crossentropy,
                   optimizer=optimizer,
@@ -99,17 +103,19 @@ if __name__ == "__main__":
     log_dir = get_tensor_dir(opt=opt,
                              epochs=epochs,
                              l_inputs=layer_inputs,
+                             mom=momentum,
                              test_mode=False)
     tensor_cb = callbacks.TensorBoard(log_dir=log_dir)
 
     # Stops the training if no improvement
-    early_cb = callbacks.EarlyStopping(monitor='val_loss',
-                                       patience=10,
+    early_cb = callbacks.EarlyStopping(monitor='val_acc',
+                                       patience=20,
                                        min_delta=0.001)
 
     # Saves model while training if [monitor] param is better than the [period] previous epochs
     file_path = get_file_path(optimizer=opt,
-                              l_inputs=layer_inputs)
+                              l_inputs=layer_inputs,
+                              mom=momentum)
     checkpoint_cp = callbacks.ModelCheckpoint(filepath=file_path,
                                               monitor="val_acc",
                                               save_best_only=True,
@@ -119,4 +125,6 @@ if __name__ == "__main__":
               epochs=epochs,
               batch_size=64,
               validation_split=0.2,
-              callbacks=[tensor_cb, checkpoint_cp, early_cb])
+              callbacks=[tensor_cb, checkpoint_cp])
+
+    model.save("./models/sgd_d512.64.32_e150_m.5.h5", overwrite=True)
