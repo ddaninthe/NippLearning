@@ -67,7 +67,7 @@ if __name__ == "__main__":
     epochs = 150
 
     # Layers
-    layer_inputs = [512, 64, 32]
+    layer_inputs = [64, 32]
     for i in range(len(layer_inputs)):
         if i == 0:
             model.add(Dense(layer_inputs[0],
@@ -92,8 +92,8 @@ if __name__ == "__main__":
 
     # Compile
     opt = "sgd"
-    momentum = 0.5
-    optimizer = optimizers.SGD(momentum=momentum)
+    learning = .2
+    optimizer = optimizers.SGD(lr=learning)
 
     model.compile(loss=losses.binary_crossentropy,
                   optimizer=optimizer,
@@ -103,19 +103,19 @@ if __name__ == "__main__":
     log_dir = get_tensor_dir(opt=opt,
                              epochs=epochs,
                              l_inputs=layer_inputs,
-                             mom=momentum,
+                             lr=learning,
                              test_mode=False)
     tensor_cb = callbacks.TensorBoard(log_dir=log_dir)
 
     # Stops the training if no improvement
     early_cb = callbacks.EarlyStopping(monitor='val_acc',
-                                       patience=20,
+                                       patience=10,
                                        min_delta=0.001)
 
     # Saves model while training if [monitor] param is better than the [period] previous epochs
     file_path = get_file_path(optimizer=opt,
                               l_inputs=layer_inputs,
-                              mom=momentum)
+                              lr=learning)
     checkpoint_cp = callbacks.ModelCheckpoint(filepath=file_path,
                                               monitor="val_acc",
                                               save_best_only=True,
@@ -127,4 +127,4 @@ if __name__ == "__main__":
               validation_split=0.2,
               callbacks=[tensor_cb, checkpoint_cp])
 
-    model.save("./models/sgd_d512.64.32_e150_m.5.h5", overwrite=True)
+    model.save("./models/sgd_d64.32_l.2_e150.h5")

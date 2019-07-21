@@ -20,7 +20,7 @@ def predict():
     if 'images' not in request.form:
         abort(400)
 
-    model_name = "sgd_d512.64.32_e150_m.5.h5"
+    model_name = "sgd_d64.32_l.2_e150.h5"
     model = models.load_model("./models/" + model_name)
 
     results = []
